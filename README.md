@@ -1,0 +1,1 @@
+çok klas hareketler bunlar
