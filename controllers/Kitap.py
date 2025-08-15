@@ -30,23 +30,34 @@ def kitap_ekle(kitap: KitapCreate, db: Session = Depends(get_db)):
     db.add(yeni_kitap)
     db.commit()
     db.refresh(yeni_kitap)
+    return yeni_kitap
 
 # Kitap listeleme
 @router.get("/kitaplistele", response_model=List[KitapResponse])
 def kitap_listele(db: Session = Depends(get_db)):   
     return db.query(Kitap).all()
 
+# Kitap filtreleme
+@router.get("/kitapgetir", response_model=KitapResponse)
+def kitap_getir(
+    id: int = Query(None, description="Kitap ID ile arama"),
+    db: Session = Depends(get_db)
+):
+    query = db.query(Kitap).filter(Kitap.id == id)
+    return query.one()
 
 # Kitap filtreleme
 @router.get("/kitapfiltrele", response_model=List[KitapResponse])
 def kitap_filtrele(
+    id: Optional[int] = Query(None, description="Kitap ID ile arama"),
     ad: Optional[str] = Query(None, description="Kitap adı ile arama"),
     yayinevi: Optional[str] = Query(None, description="Yayınevi ile arama"),
     kirada: Optional[bool] = Query(None, description="Kira bilgisine göre arama"),
     db: Session = Depends(get_db)
 ):
     query = db.query(Kitap)
-
+    if id:
+        query = query.filter(Kitap.id == id)
     if ad:
         query = query.filter(Kitap.ad.ilike(f"%{ad}%"))
     if yayinevi:
@@ -63,6 +74,7 @@ def kitap_guncelle(
     kitap_data: KitapCreate,
     db: Session = Depends(get_db)
 ):
+   
     kitap = db.query(Kitap).filter(Kitap.id == id).first()
     if not kitap:
         raise HTTPException(status_code=404, detail="Kitap bulunamadı")
@@ -70,7 +82,6 @@ def kitap_guncelle(
     # Alanları güncelle
     kitap.ad = kitap_data.ad
     kitap.yayinevi = kitap_data.yayinevi
-    kitap.kirada = kitap_data.kirada
     db.commit()
     db.refresh(kitap)
     return kitap
